@@ -46,33 +46,22 @@ object GiftService {
   }
 
   val gifts: mutable.HashMap[Int, Gift] = new mutable.HashMap()
-  val db = Database.forConfig("h2mem1")
 
   def getGift: Endpoint[Gift] = get("gift" / int) {
     (id: Int) => {
-      val selectQuery = Gifts.table.filter(_.id === id).result.head
-      val gift: Future[Gift] = db.run(selectQuery)
-      Ok(gift.asTwitter)
+      Ok(Gifts.get(id).asTwitter)
     }
   }
 
   def putGift: Endpoint[Gift] = post("gift" ? body.as[Gift]) {
     (gift: Gift) => {
-      val upsert: DBIO[Option[Int]] = (Gifts.table returning Gifts.table.map(_.id)).insertOrUpdate(gift)
-      val future: Future[Gift] = db.run(upsert) flatMap {
-        case Some(id) =>
-          val selectQuery = Gifts.table.filter(_.id === id).result.head
-          db.run(selectQuery)
-        case None => Future.successful(gift)
-      }
-      Ok(future.asTwitter)
+      Ok(Gifts.insertOrUpdate(gift).asTwitter)
     }
   }
 
   def deleteGift(): Endpoint[Int] = delete("gift" / int) {
     (id: Int) => {
-      val deleteQuery = Gifts.table.filter(_.id === id).delete
-      Ok(db.run(deleteQuery).asTwitter)
+      Ok(Gifts.delete(id).asTwitter)
     }
   }
 

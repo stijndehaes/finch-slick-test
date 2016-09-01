@@ -7,9 +7,6 @@ import com.twitter.io.Buf
 import org.scalatest.{Matchers, fixture}
 import io.finch.test.ServiceSuite
 import slick.driver.H2Driver.api._
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
-import ExecutionContext.Implicits.global
 
 /**
   * Created by stijndehaes on 29/08/16.
@@ -51,6 +48,24 @@ class GiftServiceTest extends fixture.FlatSpec with ServiceSuite with Matchers {
     result.getContentString() should include("\"id\"")
     result.getContentString() should include("hondje")
     result.getContentString() should include("Dit is een bull dog terrier")
+  }
+
+  "post existing test" should "be able to get a gift" in { f =>
+    val request: Request = RequestBuilder()
+      .url("http://localhost:8080/gift").buildPost(
+      Buf.Utf8(s"""
+                  |{
+                  |"id": 1,
+                  |"name": "nieuw hondje",
+                  |"description": "Dit is geen bull dog terrier"
+                  |}
+             """.stripMargin)
+    )
+    val result: Response = f(request)
+    result.statusCode shouldBe 200
+    result.getContentString() should include("\"id\"")
+    result.getContentString() should include("nieuw hondje")
+    result.getContentString() should include("Dit is geen bull dog terrier")
   }
 
   "delete test" should "be able to delete a gift" in { f =>
